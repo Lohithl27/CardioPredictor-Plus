@@ -1,0 +1,23 @@
+# systemd service: starts CardioPredictor+ at boot and restarts it if it crashes.
+# install_rpi.sh copies this file to /etc/systemd/system/ and fills in the paths.
+[Unit]
+Description=CardioPredictor+ server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=__PROJECT__
+Environment=CARDIO_DATA_DIR=__PROJECT__/data
+Environment=SENSOR_MODE=auto
+Environment=CAMERA_BACKEND=picamera2
+Environment=CAMERA_INDEX=0
+# Set these in /etc/cardiopredictor.env (not here) so passwords stay out of this file:
+EnvironmentFile=-/etc/cardiopredictor.env
+ExecStart=__PROJECT__/.venv/bin/uvicorn api.main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,20 @@
+{
+  "method": "permutation_importance",
+  "importance": {
+    "age": 0.08577,
+    "cigsPerDay": 0.02219,
+    "male": 0.01748,
+    "sysBP": 0.01352,
+    "glucose": 0.00382,
+    "prevalentHyp": 0.00351,
+    "currentSmoker": 0.00126,
+    "diabetes": 0.001,
+    "diaBP": 0.00015,
+    "education": 0.00011,
+    "BMI": -8e-05,
+    "heartRate": -0.00029,
+    "totChol": -0.00062,
+    "prevalentStroke": -0.00066,
+    "BPMeds": -0.0007
+  }
+}

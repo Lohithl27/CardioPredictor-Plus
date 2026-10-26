@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 360" role="img" aria-label="Illustration of a heart-care clinic">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6f5f7"/><stop offset="1" stop-color="#ffffff"/></linearGradient>
+    <linearGradient id="bld" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b6e8a"/><stop offset="1" stop-color="#084f63"/></linearGradient>
+    <linearGradient id="heart" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a7a"/><stop offset="1" stop-color="#e0475b"/></linearGradient>
+  </defs>
+  <rect width="560" height="360" rx="22" fill="url(#sky)"/>
+  <circle cx="90" cy="70" r="46" fill="#cdeef1" opacity="0.7"/>
+  <!-- hospital block -->
+  <rect x="150" y="110" width="260" height="190" rx="10" fill="url(#bld)"/>
+  <rect x="200" y="60" width="160" height="60" rx="8" fill="#0d7f99"/>
+  <rect x="262" y="70" width="36" height="12" rx="3" fill="#ffffff"/>
+  <rect x="274" y="58" width="12" height="36" rx="3" fill="#ffffff"/>
+  <g fill="#e6f5f7">
+    <rect x="176" y="136" width="40" height="34" rx="4"/><rect x="232" y="136" width="40" height="34" rx="4"/>
+    <rect x="288" y="136" width="40" height="34" rx="4"/><rect x="344" y="136" width="40" height="34" rx="4" opacity="0.6"/>
+    <rect x="176" y="186" width="40" height="34" rx="4" opacity="0.6"/><rect x="232" y="186" width="40" height="34" rx="4"/>
+    <rect x="288" y="186" width="40" height="34" rx="4"/>
+  </g>
+  <rect x="250" y="236" width="60" height="64" rx="6" fill="#ffffff" opacity="0.9"/>
+  <!-- floating heart -->
+  <path d="M400 130 C380 115 372 104 372 92 C372 80 381 72 392 72 C398 72 403 75 406 80 C409 75 414 72 420 72 C431 72 440 80 440 92 C440 104 432 115 412 130 Z"
+        fill="url(#heart)" transform="translate(-12 -4) scale(1.05)">
+    <animate attributeName="transform" type="scale" values="1.05;1.14;1.05" dur="1.2s" repeatCount="indefinite" additive="sum" calcMode="spline" keySplines="0.4 0 0.6 1;0.4 0 0.6 1"/>
+  </path>
+  <!-- ECG strip -->
+  <path d="M40 320 H180 L192 300 L202 336 L214 290 L226 320 H300 L312 302 L322 330 L334 296 L346 320 H520"
+        fill="none" stroke="#1aa39a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="520" stroke-dashoffset="520">
+    <animate attributeName="stroke-dashoffset" from="520" to="0" dur="2.4s" fill="freeze"/>
+  </path>
+  <!-- cross -->
+  <g transform="translate(470 240)">
+    <circle r="22" fill="#ffffff"/>
+    <path d="M-5 -13 H5 V-5 H13 V5 H5 V13 H-5 V5 H-13 V-5 H-5Z" fill="#1aa39a"/>
+  </g>
+</svg>

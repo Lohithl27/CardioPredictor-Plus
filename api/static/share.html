@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your heart risk report · CardioPredictor+</title>
+<style>
+  :root { --bg:#f5fafb; --card:#fff; --ink:#0f2a33; --muted:#5b7180; --line:#dce8ec; --primary:#0b6e8a; --primary-d:#084f63; --accent:#1aa39a; --radius:16px; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif; line-height:1.5; }
+  header { background:linear-gradient(135deg,var(--primary),var(--accent)); color:#fff; padding:26px 18px 56px; }
+  header .in { max-width:900px; margin:0 auto; }
+  header h1 { margin:0 0 4px; font-size:24px; }
+  header p { margin:0; opacity:.92; font-size:14px; }
+  main { max-width:900px; margin:-36px auto 40px; padding:0 16px; display:grid; gap:18px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:20px; box-shadow:0 6px 24px rgba(11,110,138,.08); animation:rise .5s ease both; }
+  @keyframes rise { from { opacity:0; transform:translateY(12px);} to { opacity:1; transform:none; } }
+  h2 { margin:0 0 8px; font-size:17px; color:var(--primary-d); }
+  .muted { color:var(--muted); font-size:13px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:700px){ .grid{ grid-template-columns:1fr; } }
+  img.photo { width:100%; max-width:220px; border-radius:14px; border:1px solid var(--line); display:block; }
+  table { width:100%; border-collapse:collapse; font-size:13.5px; }
+  th,td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); }
+  th { color:var(--muted); font-weight:600; font-size:12px; }
+  .band { display:inline-block; padding:2px 10px; border-radius:999px; color:#fff; font-size:12px; font-weight:700; }
+  .Low{background:#1e8e5a}.Moderate{background:#c98a12}.High{background:#c0392b}
+  .btn { display:inline-block; padding:10px 16px; border-radius:12px; background:var(--primary); color:#fff; border:none; font:inherit; font-weight:600; cursor:pointer; text-decoration:none; }
+  .btn:hover { background:var(--primary-d); }
+  select { padding:9px 10px; border:1px solid #cfdfe5; border-radius:10px; font:inherit; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px; }
+  .notice { background:#eaf6f8; border:1px solid #c9e6eb; border-radius:12px; padding:12px 14px; font-size:13.5px; color:var(--primary-d); }
+  .error { background:#fdecea; border:1px solid #f5c2bc; color:#8e2a1f; border-radius:12px; padding:14px; }
+  .disclaimer { font-size:12px; color:var(--muted); }
+  @media (prefers-reduced-motion: reduce) { * { animation:none !important; } }
+</style>
+</head>
+<body>
+<header><div class="in">
+  <h1>Your heart risk report</h1>
+  <p>CardioPredictor+ · shared by your care team. Read-only.</p>
+</div></header>
+
+<main id="main">
+  <div class="card"><p class="muted">Loading your report…</p></div>
+</main>
+
+<script>
+const token = location.pathname.split('/').filter(Boolean).pop();
+const pct = v => (v == null ? '—' : (v * 100).toFixed(1) + '%');
+const esc = s => String(s ?? '—').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+async function load() {
+  const main = document.getElementById('main');
+  let d;
+  try {
+    const res = await fetch(`/share/${encodeURIComponent(token)}/data`);
+    if (!res.ok) throw new Error((await res.json()).detail || 'Link not available');
+    d = await res.json();
+  } catch (e) {
+    main.innerHTML = `<div class="card error"><b>This link is not available.</b><br>${esc(e.message)}<br>Ask your care team for a new link.</div>`;
+    return;
+  }
+  const p = d.patient;
+  const latest = d.assessments[d.assessments.length - 1];
+  const photo = d.photo_url ? `<img class="photo" src="${d.photo_url}" alt="Registration photo">` : '';
+  const rows = d.assessments.map(a => {
+    const i = a.inputs || {};
+    const band = a.risk_category || '—';
+    return `<tr><td>${esc((a.saved_at || '').slice(0, 16).replace('T', ' '))}</td>
+      <td>${i.heartRate ?? '—'} bpm</td>
+      <td>${pct(a.risk_12_year_probability)}</td>
+      <td><span class="band ${band}">${esc(band)}</span></td></tr>`;
+  }).join('') || '<tr><td colspan="4" class="muted">No assessments yet.</td></tr>';
+  const meas = d.measurements.slice(-10).reverse().map(m =>
+    `<tr><td>${esc((m.saved_at || '').slice(0, 16).replace('T', ' '))}</td><td>${m.hr ?? '—'} bpm</td>
+     <td>${m.spo2 ?? '—'}%</td><td>${esc(m.quality)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">No measurements yet.</td></tr>';
+
+  main.innerHTML = `
+    <div class="card grid">
+      <div>
+        <h2>${esc(p.name)}</h2>
+        <div class="muted">Patient ID ${esc(p.patient_id)} · Age ${esc(p.age)} · ${esc(p.sex || '')}</div>
+        <div class="muted" style="margin-top:6px;">Link expires ${esc((d.expires_at || '').slice(0, 16).replace('T', ' '))} UTC</div>
+        ${latest ? `<div style="margin-top:14px;"><div class="muted">Latest 12-year estimate</div>
+          <div style="font-size:36px;font-weight:700;">${pct(latest.risk_12_year_probability)}</div>
+          <span class="band ${latest.risk_category}">${esc(latest.risk_category)} risk</span></div>` : '<div class="muted" style="margin-top:14px;">No assessment yet.</div>'}
+      </div>
+      <div>${photo}</div>
+    </div>
+
+    <div class="card">
+      <h2>Download your report</h2>
+      <p class="muted">Includes your photo, every measurement and every assessment.</p>
+      <div class="row">
+        <select id="fmt"><option value="png">PNG image</option><option value="txt">Text (.txt)</option><option value="docx">Word (.docx)</option></select>
+        <a class="btn" id="dl" href="#">Download</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Risk assessments</h2>
+      <table><thead><tr><th>Date (UTC)</th><th>Heart rate</th><th>12-year risk</th><th>Band</th></tr></thead>
+      <tbody>${rows}</tbody></table>
+    </div>
+
+    <div class="card">
+      <h2>Finger measurements</h2>
+      <table><thead><tr><th>Date (UTC)</th><th>Heart rate</th><th>SpO2</th><th>Signal</th></tr></thead>
+      <tbody>${meas}</tbody></table>
+    </div>
+
+    <div class="notice">This is a research prototype. The risk figures are estimates from a statistical model, not a diagnosis. Please discuss them with your doctor.</div>
+    <p class="disclaimer">Heart rate and SpO2 come from a hobby-grade sensor and are indicative only.</p>`;
+
+  const sel = document.getElementById('fmt');
+  const link = document.getElementById('dl');
+  const setHref = () => { link.href = `/share/${encodeURIComponent(token)}/report?format=${sel.value}`; };
+  sel.addEventListener('change', setHref);
+  setHref();
+}
+load();
+</script>
+</body>
+</html>

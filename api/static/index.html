@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CardioPredictor+ · Heart Risk Clinic</title>
+<style>
+  :root {
+    --bg: #f5fafb;
+    --card: #ffffff;
+    --ink: #0f2a33;
+    --muted: #5b7180;
+    --line: #dce8ec;
+    --primary: #0b6e8a;
+    --primary-d: #084f63;
+    --accent: #1aa39a;
+    --good: #1e8e5a;
+    --warn: #c98a12;
+    --bad: #c0392b;
+    --radius: 16px;
+    --shadow: 0 6px 24px rgba(11, 110, 138, 0.08);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; line-height: 1.5; }
+  a { color: var(--primary); }
+
+  /* ---------- top bar ---------- */
+  .topbar { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .topbar-in { max-width: 1100px; margin: 0 auto; padding: 12px 18px; display: flex;
+               align-items: center; gap: 14px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
+  .brand small { display: block; font-weight: 500; font-size: 12px; color: var(--muted); }
+  .nav { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+  .nav a { text-decoration: none; color: var(--primary-d); font-size: 13px; padding: 6px 10px;
+           border-radius: 999px; }
+  .nav a:hover { background: #e8f4f7; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
+          background: #eef6f8; font-size: 13px; color: var(--muted); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #9fb3ba; }
+  .dot.live { background: var(--good); animation: pulse 1.4s infinite; }
+  .dot.warn { background: var(--warn); }
+  .dot.bad { background: var(--bad); }
+  .sim-badge { background: #fff4df; color: #8a5a00; padding: 2px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(30,142,90,0.5); } 70% { box-shadow: 0 0 0 9px rgba(30,142,90,0); } 100% { box-shadow: 0 0 0 0 rgba(30,142,90,0); } }
+
+  /* ---------- hero ---------- */
+  .hero { max-width: 1100px; margin: 0 auto; padding: 34px 18px 10px; display: grid;
+          grid-template-columns: 1.05fr 1fr; gap: 28px; align-items: center; }
+  .hero h1 { font-size: 34px; line-height: 1.15; margin: 0 0 10px; letter-spacing: -0.02em; color: var(--primary-d); }
+  .hero p { color: var(--muted); margin: 0 0 16px; max-width: 520px; }
+  .hero-art img { width: 100%; height: auto; display: block; border-radius: 22px; box-shadow: var(--shadow); }
+  .ecg-line { display: block; margin-top: 8px; }
+  .steps-strip { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .steps-strip span { font-size: 12.5px; background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; color: var(--primary-d); }
+  @media (max-width: 820px) { .hero { grid-template-columns: 1fr; } .hero h1 { font-size: 26px; } }
+
+  /* ---------- layout ---------- */
+  main { max-width: 1100px; margin: 0 auto; padding: 12px 18px 60px; display: grid; gap: 22px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  @media (max-width: 880px) { .grid-2 { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
+          padding: 22px 22px; min-width: 0; animation: rise .6s ease both; }
+  .card:nth-child(2) { animation-delay: .08s; } .card:nth-child(3) { animation-delay: .16s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  .step { display: flex; align-items: center; gap: 12px; margin: 0 0 6px; }
+  .step-no { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent));
+             color: #fff; display: grid; place-items: center; font-weight: 700; flex: 0 0 auto; }
+  .card h2 { margin: 0; font-size: 18px; color: var(--primary-d); }
+  .sub { margin: 4px 0 16px; color: var(--muted); font-size: 13.5px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 12.5px; }
+  .hidden { display: none !important; }
+
+  /* ---------- forms & buttons ---------- */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+  .form-grid .full { grid-column: 1 / -1; }
+  @media (max-width: 520px) { .form-grid { grid-template-columns: 1fr; } }
+  label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 4px; font-weight: 500; }
+  .label-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid #cfdfe5; border-radius: 10px;
+            font: inherit; font-size: 14px; background: #fbfdfd; color: var(--ink); }
+  textarea { min-height: 60px; resize: vertical; }
+  input:focus, select:focus, textarea:focus { outline: 3px solid rgba(26,163,154,0.25); border-color: var(--accent); background: #fff; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 18px; border: none;
+         border-radius: 12px; background: var(--primary); color: #fff; font: inherit; font-weight: 600; font-size: 14px;
+         cursor: pointer; text-decoration: none; transition: transform .15s ease, background .2s ease; }
+  .btn:hover { background: var(--primary-d); transform: translateY(-1px); }
+  .btn:disabled { background: #9db9c1; cursor: default; transform: none; }
+  .btn-accent { background: var(--accent); }
+  .btn-accent:hover { background: #148a83; }
+  .btn-ghost { background: #fff; color: var(--primary); border: 1px solid #b7d4dc; }
+  .btn-ghost:hover { background: #eef7f9; }
+  .btn-sm { padding: 7px 12px; font-size: 13px; border-radius: 9px; }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; align-items: center; }
+  .tag { font-size: 11.5px; padding: 2px 9px; border-radius: 999px; font-weight: 600; }
+  .tag-sensor { background: #dff3ec; color: var(--good); }
+  .tag-manual { background: #fff1d6; color: #8a5a00; }
+  .toast { position: fixed; right: 18px; bottom: 18px; max-width: 360px; background: var(--ink); color: #fff; padding: 12px 16px;
+           border-radius: 12px; font-size: 13.5px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 50; animation: rise .3s ease both; }
+  .toast.err { background: var(--bad); }
+  .error-box { background: #fdecea; border: 1px solid #f5c2bc; color: #8e2a1f; border-radius: 10px; padding: 10px 12px; font-size: 13.5px; margin-top: 12px; }
+  .info-box { background: #eaf6f8; border: 1px solid #c9e6eb; color: var(--primary-d); border-radius: 10px; padding: 10px 12px; font-size: 13.5px; }
+  .warn-box { background: #fff7e6; border: 1px solid #f2d9a4; color: #7a5300; border-radius: 10px; padding: 10px 12px; font-size: 13px; margin-top: 10px; }
+
+  /* ---------- patient ---------- */
+  .patient-head { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .avatar { width: 96px; height: 96px; border-radius: 18px; background: #eaf6f8; border: 1px dashed #b7d4dc;
+            display: grid; place-items: center; overflow: hidden; flex: 0 0 auto; }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .avatar span { font-size: 12px; color: var(--muted); text-align: center; padding: 6px; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13.5px; }
+  .kv b { color: var(--muted); font-weight: 500; }
+  .folder { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; background: #f1f6f8; padding: 6px 8px; border-radius: 8px; word-break: break-all; }
+
+  /* ---------- live + measurement ---------- */
+  .vitals-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+  .vital { background: #f6fbfc; border: 1px solid var(--line); border-radius: 14px; padding: 12px; text-align: center; }
+  .vital .lbl { font-size: 12px; color: var(--muted); }
+  .vital .num { font-size: 38px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.15; }
+  .vital .unit { font-size: 12px; color: var(--muted); }
+  .heart-icon { display: inline-block; animation: beat 1s infinite; transform-origin: center; }
+  @keyframes beat { 0%,100% { transform: scale(1); } 15% { transform: scale(1.18); } 30% { transform: scale(1); } 45% { transform: scale(1.12); } }
+  .progress { height: 10px; background: #e6f0f3; border-radius: 999px; overflow: hidden; margin: 10px 0 6px; }
+  .progress > div { height: 100%; width: 0; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width .4s ease; }
+  .progress.indeterminate > div { width: 35%; animation: slide 1.2s ease-in-out infinite; }
+  @keyframes slide { 0% { margin-left: -35%; } 100% { margin-left: 100%; } }
+  .phase { font-size: 14px; font-weight: 600; color: var(--primary-d); min-height: 22px; }
+  .finger-hint { display: flex; align-items: center; gap: 12px; background: #f1faf8; border: 1px solid #cdeee6; border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; font-size: 13.5px; }
+  .finger-hint svg { flex: 0 0 auto; }
+  svg.chart { width: 100%; height: 150px; display: block; background: #fbfdfe; border: 1px solid var(--line); border-radius: 12px; }
+
+  /* ---------- result & gauge ---------- */
+  .gauge { width: 100%; max-width: 230px; display: block; margin: 0 auto; }
+  .g-track { fill: none; stroke: #e6eef1; stroke-width: 14; }
+  .g-fill { fill: none; stroke: var(--primary); stroke-width: 14; transition: stroke-dasharray .8s ease, stroke .3s; }
+  .gauge-scale { display: flex; justify-content: space-between; max-width: 230px; margin: -4px auto 6px; font-size: 11.5px; color: var(--muted); }
+  .risk-head { text-align: center; margin-top: 4px; }
+  .risk-num { font-size: 40px; font-weight: 700; letter-spacing: -0.02em; }
+  .band { display: inline-block; padding: 4px 14px; border-radius: 999px; color: #fff; font-weight: 700; font-size: 13px; }
+  .band-Low { background: var(--good); } .band-Moderate { background: var(--warn); } .band-High { background: var(--bad); }
+  .factor-row { display: grid; grid-template-columns: 1fr 120px 62px; gap: 8px; align-items: center; font-size: 12.5px; margin: 6px 0; list-style: none; }
+  .factor-list { padding: 0; margin: 0; }
+  .fbar-track { position: relative; height: 10px; background: #eef4f6; border-radius: 6px; }
+  .fbar { position: absolute; top: 0; height: 10px; border-radius: 6px; }
+  .fbar-up { background: var(--bad); } .fbar-down { background: var(--good); }
+  .fmid { position: absolute; left: 50%; top: -3px; width: 1px; height: 16px; background: #95a9b1; }
+  .fval { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .compare { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; }
+  .compare div { background: #f6fbfc; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 12px; color: var(--muted); }
+  .compare b { display: block; font-size: 17px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  .table-wrap { overflow-x: auto; }
+  .disclaimer { margin-top: 14px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 10px; }
+
+  /* ---------- reports & share ---------- */
+  .file-list { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; }
+  .file-list li { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: #f6fbfc;
+                  border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 13px; }
+  .share-url { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+
+  .footer { text-align: center; color: var(--muted); font-size: 12px; padding: 20px; }
+
+  /* ---------- scroll-driven video ---------- */
+  .scroll-stage { position: relative; height: 300vh; background: #0b1d24; }
+  .scroll-sticky { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+  .scroll-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .scroll-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(8,35,44,0.82) 0%, rgba(8,35,44,0.35) 55%, rgba(8,35,44,0.1) 100%); }
+  .scroll-copy { position: absolute; left: 0; right: 0; bottom: 9vh; max-width: 1100px; margin: 0 auto; padding: 0 18px; color: #fff; }
+  .scroll-copy .label { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .75; margin: 0 0 8px; }
+  .scroll-step { position: absolute; left: 18px; bottom: 9vh; max-width: 520px; margin: 0; font-size: clamp(22px, 3.4vw, 38px); font-weight: 700; line-height: 1.2;
+                 opacity: 0; transform: translateY(18px); transition: opacity .5s ease, transform .5s ease; }
+  .scroll-step small { display: block; font-size: 15px; font-weight: 400; opacity: .85; margin-top: 8px; line-height: 1.45; }
+  .scroll-step.active { opacity: 1; transform: none; }
+  .scroll-progress { position: absolute; left: 18px; right: 18px; top: 14px; height: 3px; background: rgba(255,255,255,.2); border-radius: 3px; overflow: hidden; max-width: 1064px; margin: 0 auto; }
+  .scroll-progress > div { height: 100%; width: 0; background: var(--accent); }
+  .scroll-hint { position: absolute; right: 18px; top: 26px; color: #fff; font-size: 12px; opacity: .8; }
+  .bg-video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; opacity: .16; display: none; pointer-events: none; }
+  body.bg-mode .bg-video { display: block; }
+  body.bg-mode main, body.bg-mode .hero { position: relative; }
+  @media (max-width: 720px) {
+    .scroll-stage { height: 260vh; }
+    .scroll-shade { background: linear-gradient(180deg, rgba(8,35,44,0.25) 0%, rgba(8,35,44,0.62) 100%); }
+    .scroll-step { left: 0; right: 0; bottom: 0; max-width: none; }
+    .scroll-copy { padding: 0 16px; }
+  }
+  @media (max-width: 520px) {
+    .vitals-row { grid-template-columns: 1fr; }
+    .compare { grid-template-columns: 1fr; }
+    .nav a { padding: 5px 8px; font-size: 12.5px; }
+    .topbar-in { padding: 10px 14px; }
+    .hero { padding: 22px 14px 6px; }
+    main { padding: 10px 14px 50px; }
+    .card { padding: 18px 16px; }
+    .factor-row { grid-template-columns: 1fr 70px 56px; }
+    .btn-row > * { flex: 1 1 auto; }
+  }
+  .scroll-copy, .scroll-step { word-wrap: break-word; }
+  html, body { overflow-x: clip; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <img src="img/logo.svg" alt="" width="40" height="40">
+      <div>CardioPredictor+<small>Heart risk clinic</small></div>
+    </div>
+    <span class="chip" id="sensor-chip"><span class="dot" id="sensor-dot"></span><span id="sensor-text">Connecting to sensor…</span></span>
+    <nav class="nav">
+      <a href="#patients">Patients</a>
+      <a href="#measure">Measure</a>
+      <a href="#assess">Assess</a>
+      <a href="#reports">Reports</a>
+      <a href="#share">Share</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div>
+    <h1>Heart risk screening,<br>organised by patient.</h1>
+    <p>Register a patient, take a photo, record a finger measurement, and get a 12-year cardiovascular risk estimate. Every reading is saved to that patient's own folder.</p>
+    <div class="steps-strip"><span>1 · Register</span><span>2 · Photo</span><span>3 · Measure</span><span>4 · Assess</span><span>5 · Report &amp; share</span></div>
+  </div>
+  <div class="hero-art">
+    <img src="img/hero.svg" alt="Illustration of a heart-care clinic with a heartbeat trace">
+  </div>
+</section>
+
+
+<section class="scroll-stage" id="scroll-stage" aria-label="Product video, plays as you scroll">
+  <div class="scroll-sticky">
+    <video class="scroll-video" id="scroll-video" muted playsinline preload="auto" poster="media/hero-poster.jpg" aria-hidden="true">
+      <source src="media/hero-scroll.webm" type="video/webm">
+      <source src="media/hero-scroll.mp4" type="video/mp4">
+    </video>
+    <div class="scroll-shade"></div>
+    <div class="scroll-progress"><div id="scroll-bar"></div></div>
+    <div class="scroll-hint">Scroll to play</div>
+    <div class="scroll-copy" style="position:absolute;inset:0;">
+      <p class="scroll-step active" data-from="0" data-to="0.34">Register the patient
+        <small>Create a folder for each patient, then take their photo with the camera.</small></p>
+      <p class="scroll-step" data-from="0.34" data-to="0.67">Measure the heartbeat
+        <small>Place a finger on the sensor. The live reading appears on this page.</small></p>
+      <p class="scroll-step" data-from="0.67" data-to="1.01">See the 12-year risk
+        <small>Results, charts and a PNG, Word or text report for each patient.</small></p>
+    </div>
+  </div>
+</section>
+
+<video class="bg-video" id="bg-video" muted loop playsinline aria-hidden="true"></video>
+
+<main>
+
+  <!-- ============ 1. PATIENTS ============ -->
+  <section class="card" id="patients">
+    <div class="step"><div class="step-no">1</div><h2>Patient register</h2></div>
+    <p class="sub">Choose an existing patient, or register a new one. Each patient gets their own folder, named by patient ID.</p>
+
+    <div class="form-grid">
+      <div class="full">
+        <label for="patient-select">Current patient</label>
+        <select id="patient-select"><option value="">— select a registered patient —</option></select>
+      </div>
+    </div>
+
+    <div class="patient-head" style="margin-top:16px;">
+      <div class="avatar" id="avatar"><span>No photo yet</span></div>
+      <div style="flex:1;min-width:220px;">
+        <div class="kv" id="patient-kv"><b>Status</b><span>No patient selected</span></div>
+        <div class="folder hidden" id="patient-folder" style="margin-top:8px;"></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-accent btn-sm" id="photo-capture" type="button" disabled>Take photo with camera</button>
+      <label class="btn btn-ghost btn-sm" style="margin:0;" for="photo-cam">Use this device's camera</label>
+      <input type="file" id="photo-cam" accept="image/*" capture="user" class="hidden">
+      <label class="btn btn-ghost btn-sm" style="margin:0;" for="photo-upload">Upload a photo file</label>
+      <input type="file" id="photo-upload" accept="image/*" class="hidden">
+      <button class="btn btn-ghost btn-sm" id="edit-patient" type="button" disabled>Edit details</button>
+    </div>
+    <p class="small" style="margin-top:6px;">No camera on the Raspberry Pi? Open this page on your phone or laptop and use "Use this device's camera" (phone) or "Upload a photo file". Any JPEG, PNG or WebP image works.</p>
+
+    <details style="margin-top:18px;" id="new-patient-box">
+      <summary style="cursor:pointer;font-weight:600;color:var(--primary-d);">+ Register a new patient</summary>
+      <form id="new-patient-form" class="form-grid" style="margin-top:12px;">
+        <div><label for="np-id">Patient ID</label><input id="np-id" required placeholder="e.g. P-1042" maxlength="40"></div>
+        <div><label for="np-name">Full name</label><input id="np-name" required maxlength="120"></div>
+        <div><label for="np-age">Age</label><input id="np-age" type="number" min="0" max="120" step="1"></div>
+        <div><label for="np-sex">Sex</label>
+          <select id="np-sex"><option value="">—</option><option value="female">Female</option><option value="male">Male</option><option value="other">Other</option></select></div>
+        <div class="full"><label for="np-notes">Notes (optional)</label><textarea id="np-notes" maxlength="1000"></textarea></div>
+        <div class="full">
+          <label>Registration photo (optional)</label>
+          <div class="btn-row" style="margin-top:4px;">
+            <label class="btn btn-ghost btn-sm" style="margin:0;" for="np-cam">Use this device's camera</label>
+            <input type="file" id="np-cam" accept="image/*" capture="user" class="hidden">
+            <label class="btn btn-ghost btn-sm" style="margin:0;" for="np-file">Choose a photo file</label>
+            <input type="file" id="np-file" accept="image/*" class="hidden">
+            <span id="np-photo-name" class="small">No photo chosen</span>
+          </div>
+          <img id="np-preview" class="hidden" alt="Chosen photo" style="max-height:120px;border-radius:10px;margin-top:8px;">
+          <label class="small" style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+            <input type="checkbox" id="np-photo" style="width:auto;"> Or take it with the Raspberry Pi's own camera (only if one is connected)
+          </label>
+        </div>
+        <div class="full btn-row">
+          <button class="btn" id="np-submit" type="submit">Register patient</button>
+          <button class="btn btn-ghost" id="np-cancel" type="button" style="display:none;">Cancel edit</button>
+        </div>
+      </form>
+    </details>
+    <div id="patient-error" class="error-box hidden"></div>
+  </section>
+
+  <!-- ============ 2. MEASURE ============ -->
+  <section class="card" id="measure">
+    <div class="step"><div class="step-no">2</div><h2>Finger measurement</h2></div>
+    <p class="sub">Place a finger on the sensor, keep still, then press start. The reading is saved to the patient's folder.</p>
+
+    <div class="finger-hint" id="finger-hint">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1aa39a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5a2 2 0 0 1 4 0v6"/><path d="M12 11V3a2 2 0 0 1 4 0v8"/><path d="M16 11V6a2 2 0 0 1 4 0v9a8 8 0 0 1-8 8h-2a8 8 0 0 1-6.8-3.8L2 14a2 2 0 0 1 3-2.6l3 2.6"/></svg>
+      <span id="finger-text">Waiting for sensor…</span>
+    </div>
+
+    <div class="vitals-row">
+      <div class="vital"><div class="lbl">Live heart rate</div>
+        <div class="num"><span class="heart-icon" id="live-heart">♥</span> <span id="live-hr">—</span></div><div class="unit">bpm</div></div>
+      <div class="vital"><div class="lbl">Live SpO2</div>
+        <div class="num" id="live-spo2">—</div><div class="unit">% (approximate)</div></div>
+      <div class="vital"><div class="lbl">Signal</div>
+        <div class="num" style="font-size:20px;padding-top:8px;" id="live-quality">—</div><div class="unit" id="live-src">&nbsp;</div></div>
+    </div>
+    <svg id="hr-chart" class="chart" viewBox="0 0 600 150" preserveAspectRatio="none" role="img" aria-label="Live heart rate, last two minutes"></svg>
+
+    <div class="btn-row">
+      <label class="small muted" for="measure-seconds">Duration</label>
+      <select id="measure-seconds" style="width:auto;">
+        <option value="15">15 seconds</option><option value="20" selected>20 seconds</option><option value="30">30 seconds</option>
+      </select>
+      <button class="btn" id="measure-btn" type="button" disabled>Start measurement</button>
+    </div>
+    <div class="progress hidden" id="measure-progress"><div id="measure-bar"></div></div>
+    <div class="phase" id="measure-phase"></div>
+    <div id="measure-result"></div>
+  </section>
+
+  <!-- ============ 3. ASSESSMENT ============ -->
+  <section class="grid-2" id="assess">
+    <div class="card">
+      <div class="step"><div class="step-no">3</div><h2>Risk assessment</h2></div>
+      <p class="sub">Heart rate comes from the sensor measurement above, or you can type it. Other values are entered by hand.</p>
+      <form id="predict-form" class="form-grid">
+        <input type="hidden" id="hr_source" value="manual">
+        <div><label for="age">Age (years)</label><input id="age" type="number" min="18" max="100" required value="50"></div>
+        <div><label for="male">Sex</label><select id="male"><option value="1">Male</option><option value="0">Female</option></select></div>
+        <div><label for="education">Education</label>
+          <select id="education"><option value="1">Up to primary / some high school</option><option value="2" selected>High school / diploma</option><option value="3">Some college</option><option value="4">College degree or higher</option></select></div>
+        <div><label for="currentSmoker">Current smoker</label><select id="currentSmoker"><option value="0">No</option><option value="1">Yes</option></select></div>
+        <div><label for="cigsPerDay">Cigarettes per day</label><input id="cigsPerDay" type="number" min="0" max="80" required value="0"></div>
+        <div><label for="BPMeds">On blood-pressure medicine</label><select id="BPMeds"><option value="0">No</option><option value="1">Yes</option></select></div>
+        <div><label for="prevalentStroke">Previous stroke</label><select id="prevalentStroke"><option value="0">No</option><option value="1">Yes</option></select></div>
+        <div><label for="prevalentHyp">Hypertension</label><select id="prevalentHyp"><option value="0">No</option><option value="1">Yes</option></select></div>
+        <div><label for="diabetes">Diabetes</label><select id="diabetes"><option value="0">No</option><option value="1">Yes</option></select></div>
+        <div><label for="totChol">Total cholesterol (mg/dL)</label><input id="totChol" type="number" min="100" max="700" required value="200"></div>
+        <div><label for="sysBP">Systolic BP (mmHg)</label><input id="sysBP" type="number" min="70" max="260" required value="120"></div>
+        <div><label for="diaBP">Diastolic BP (mmHg)</label><input id="diaBP" type="number" min="40" max="160" required value="80"></div>
+        <div><label for="BMI">BMI</label><input id="BMI" type="number" step="0.1" min="12" max="70" required value="24.5"></div>
+        <div>
+          <div class="label-row"><label for="heartRate">Heart rate (bpm)</label><span class="tag tag-manual" id="hr-tag">typed</span></div>
+          <input id="heartRate" type="number" min="30" max="220" required value="72">
+        </div>
+        <div><label for="glucose">Glucose (mg/dL)</label><input id="glucose" type="number" min="40" max="500" required value="85"></div>
+        <div><label for="spo2">SpO2 % (optional, not used by model)</label><input id="spo2" type="number" min="70" max="100" placeholder="e.g. 97"></div>
+        <div class="full"><button class="btn" type="submit" id="submit-btn">Run risk assessment</button></div>
+      </form>
+      <div id="assess-error" class="error-box hidden"></div>
+      <div class="compare" style="margin-top:14px;">
+        <div>Form HR<b id="cmp-form">—</b></div>
+        <div>Sensor HR<b id="cmp-sensor">—</b></div>
+        <div>Difference<b id="cmp-diff">—</b></div>
+      </div>
+    </div>
+
+    <div class="card" id="result-card">
+      <div class="step"><div class="step-no">✓</div><h2>Result</h2></div>
+      <p class="sub">12-year estimate for this patient, and what is driving it.</p>
+      <div id="result-empty" class="info-box">Run an assessment to see the result here.</div>
+      <div id="result" class="hidden">
+        <svg id="risk-gauge" class="gauge" viewBox="0 0 200 116" aria-label="12-year risk gauge">
+          <path d="M10,106 A90,90 0 0 1 190,106" pathLength="100" class="g-track"/>
+          <path id="risk-fill" d="M10,106 A90,90 0 0 1 190,106" pathLength="100" class="g-fill" stroke-dasharray="0 100"/>
+        </svg>
+        <div class="gauge-scale"><span>0%</span><span>10%</span><span>20%</span><span>30%+</span></div>
+        <div class="risk-head">
+          <div class="risk-num" id="risk-num">—</div>
+          <div style="margin-top:6px;"><span class="band" id="risk-band">—</span></div>
+          <div class="small muted" style="margin-top:8px;">12-year estimate · model output (10-year): <span id="risk-10">—</span></div>
+          <div class="small muted" id="result-meta" style="margin-top:4px;"></div>
+        </div>
+        <div id="result-warnings"></div>
+        <p class="small muted" style="margin:16px 0 6px;">Top factors for this patient (red raises risk, green lowers it, compared with an average patient)</p>
+        <ul class="factor-list" id="factor-list"></ul>
+        <div class="small muted" id="saved-to" style="margin-top:10px;"></div>
+        <div class="disclaimer" id="disclaimer"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TREND & HISTORY ============ -->
+  <section class="card">
+    <div class="step"><div class="step-no">↗</div><h2>Risk over time</h2></div>
+    <p class="sub" id="trend-sub">Assessments for the selected patient, oldest to newest.</p>
+    <div class="btn-row" style="margin:0 0 10px;"><span class="tag" id="trend-pill" style="background:#e8eef0;color:#5b7180;">no trend yet</span></div>
+    <div class="compare">
+      <div>Previous<b id="cmp-prev">—</b></div>
+      <div>Current<b id="cmp-cur">—</b></div>
+      <div>Change<b id="cmp-chg">—</b></div>
+    </div>
+    <svg id="trend-chart" class="chart" viewBox="0 0 600 180" preserveAspectRatio="none" role="img" aria-label="12-year risk over time"></svg>
+    <div class="table-wrap" style="margin-top:16px;">
+      <table id="history-table">
+        <thead><tr><th>Time (UTC)</th><th>HR</th><th>SpO2</th><th>12-year risk</th><th>Band</th></tr></thead>
+        <tbody id="history-body"><tr><td colspan="5" class="muted">No assessments yet.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 4. REPORTS ============ -->
+  <section class="card" id="reports">
+    <div class="step"><div class="step-no">4</div><h2>Reports</h2></div>
+    <p class="sub">Each report includes the registration photo, every finger measurement and every assessment for this patient.</p>
+    <div class="form-grid">
+      <div><label for="report-format">Format</label>
+        <select id="report-format">
+          <option value="png">PNG image (chart + photo + table)</option>
+          <option value="txt">Text document (.txt)</option>
+          <option value="docx">Word document (.docx)</option>
+        </select></div>
+      <div style="display:flex;align-items:end;"><button class="btn btn-accent" id="report-btn" type="button" disabled style="width:100%;">Generate &amp; download</button></div>
+    </div>
+    <p class="small muted" style="margin-top:12px;" id="report-status"></p>
+    <ul class="file-list" id="report-list"><li class="muted">Select a patient to see their reports.</li></ul>
+  </section>
+
+  <!-- ============ 5. SHARE ============ -->
+  <section class="card" id="share">
+    <div class="step"><div class="step-no">5</div><h2>Share with the patient</h2></div>
+    <p class="sub">Creates a private link to this patient's report page only. It is read-only and expires automatically. Anyone with the link can view it, so send it only to the patient.</p>
+    <div class="form-grid">
+      <div><label for="share-days">Link valid for</label>
+        <select id="share-days"><option value="1">1 day</option><option value="7" selected>7 days</option><option value="14">14 days</option><option value="30">30 days</option></select></div>
+      <div style="display:flex;align-items:end;"><button class="btn" id="share-create" type="button" disabled style="width:100%;">Create share link</button></div>
+    </div>
+    <div id="share-box" class="hidden" style="margin-top:14px;">
+      <div class="info-box share-url" id="share-url"></div>
+      <div class="btn-row">
+        <button class="btn btn-sm btn-ghost" id="share-copy" type="button">Copy link</button>
+        <button class="btn btn-sm btn-ghost" id="share-revoke" type="button">Revoke link</button>
+        <span class="small muted" id="share-expiry"></span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="footer">CardioPredictor+ is a research prototype. It is not a medical device. Sensor readings from a hobby-grade module are indicative only.</div>
+
+<script>
+// ============================================================
+// helpers
+// ============================================================
+const $ = id => document.getElementById(id);
+const enc = encodeURIComponent;
+const pct = v => (v == null ? '—' : (v * 100).toFixed(1) + '%');
+
+function toast(msg, isErr) {
+  const t = document.createElement('div');
+  t.className = 'toast' + (isErr ? ' err' : '');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3800);
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, {
+    headers: opts.body ? { 'Content-Type': 'application/json' } : {},
+    ...opts,
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  let data = null;
+  try { data = await res.json(); } catch (e) { data = null; }
+  if (!res.ok) {
+    const d = data && data.detail;
+    const msg = Array.isArray(d) ? d.map(x => (x.msg ? `${(x.loc || []).slice(-1)[0]}: ${x.msg}` : JSON.stringify(x))).join('; ')
+              : (d || `Request failed (${res.status})`);
+    throw new Error(msg);
+  }
+  return data;
+}
+
+function fieldValue(id, isFloat) {
+  const raw = $(id).value;
+  if (raw === '') return null;
+  return isFloat ? parseFloat(raw) : parseInt(raw, 10);
+}
+
+// ============================================================
+// state
+// ============================================================
+let current = null;      // { patient_id, name, age, sex, ... }
+let liveState = null;    // last /sensor/live answer
+let measuring = false;
+
+// ============================================================
+// 1. patients
+// ============================================================
+async function loadPatients(selectId) {
+  const data = await api('/patients');
+  const sel = $('patient-select');
+  sel.innerHTML = '<option value="">— select a registered patient —</option>' +
+    data.patients.map(p => `<option value="${p.patient_id}">${p.patient_id} · ${p.name}</option>`).join('');
+  if (selectId) sel.value = selectId;
+}
+
+async function selectPatient(pid) {
+  if (!pid) {
+    current = null;
+    $('patient-kv').innerHTML = '<b>Status</b><span>No patient selected</span>';
+    $('patient-folder').classList.add('hidden');
+    $('avatar').innerHTML = '<span>No photo yet</span>';
+    $('photo-capture').disabled = true;
+    $('edit-patient').disabled = true;
+    $('measure-btn').disabled = true;
+    $('report-btn').disabled = true;
+    $('share-create').disabled = true;
+    renderReports([]);
+    renderHistory([]);
+    drawTrend([]);
+    return;
+  }
+  try {
+    const d = await api(`/patients/${enc(pid)}`);
+    current = d.patient;
+    renderPatient(d);
+    $('age').value = current.age != null ? Math.round(current.age) : $('age').value;
+    if (current.sex) $('male').value = current.sex === 'male' ? '1' : '0';
+    $('photo-capture').disabled = false;
+    $('edit-patient').disabled = false;
+    $('measure-btn').disabled = false;
+    $('report-btn').disabled = false;
+    $('share-create').disabled = false;
+    renderReports(d.reports);
+    await loadHistory();
+    await loadTrend();
+    if (d.patient.share) showShare(d.patient.share);
+    else $('share-box').classList.add('hidden');
+  } catch (e) {
+    toast(e.message, true);
+  }
+}
+
+function renderPatient(d) {
+  const p = d.patient;
+  const sex = p.sex ? p.sex[0].toUpperCase() + p.sex.slice(1) : '—';
+  $('patient-kv').innerHTML =
+    `<b>Patient ID</b><span>${p.patient_id}</span>` +
+    `<b>Name</b><span>${p.name}</span>` +
+    `<b>Age / sex</b><span>${p.age ?? '—'} / ${sex}</span>` +
+    `<b>Registered</b><span>${(p.created_at || '').slice(0, 16).replace('T', ' ')} UTC</span>` +
+    `<b>Measurements</b><span>${d.measurements.length}</span>` +
+    `<b>Assessments</b><span>${d.assessments.length}</span>`;
+  const f = $('patient-folder');
+  f.textContent = 'Saved in: ' + d.folder + '/';
+  f.classList.remove('hidden');
+  const av = $('avatar');
+  if (d.photo_url) av.innerHTML = `<img src="${d.photo_url}" alt="Registration photo of ${p.name}">`;
+  else av.innerHTML = '<span>No photo yet · take one with the camera</span>';
+}
+
+$('patient-select').addEventListener('change', e => selectPatient(e.target.value));
+
+// ---- photos from this device (phone / laptop camera or any image file) ----
+let pendingPhoto = null;     // data URL chosen in the register form
+let editingId = null;        // patient ID while editing details
+
+function fileToJpegDataUrl(file) {
+  // Shrinks big phone photos and converts them to JPEG in the browser. If the
+  // browser cannot decode the file, send it as it is and let the server try.
+  return new Promise(resolve => {
+    const raw = new FileReader();
+    raw.onload = () => {
+      const original = raw.result;
+      const img = new Image();
+      img.onload = () => {
+        const max = 1280, k = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        resolve(c.toDataURL('image/jpeg', 0.88));
+      };
+      img.onerror = () => resolve(original);
+      img.src = original;
+    };
+    raw.onerror = () => resolve(null);
+    raw.readAsDataURL(file);
+  });
+}
+
+async function uploadPhotoFile(file) {
+  if (!file) return;
+  if (!current) { toast('Select a patient first.', true); return; }
+  const dataUrl = await fileToJpegDataUrl(file);
+  if (!dataUrl) { toast('Could not read that file.', true); return; }
+  try {
+    await api(`/patients/${enc(current.patient_id)}/photo`, { method: 'POST', body: { image_base64: dataUrl } });
+    toast('Photo saved to the patient folder.');
+    await selectPatient(current.patient_id);
+  } catch (err) { toast(err.message, true); }
+}
+
+async function choosePendingPhoto(file) {
+  if (!file) return;
+  const dataUrl = await fileToJpegDataUrl(file);
+  if (!dataUrl) { toast('Could not read that file.', true); return; }
+  pendingPhoto = dataUrl;
+  $('np-photo-name').textContent = file.name || 'Photo ready';
+  $('np-preview').src = dataUrl;
+  $('np-preview').classList.remove('hidden');
+  $('np-photo').checked = false;
+}
+$('np-cam').addEventListener('change', e => { choosePendingPhoto(e.target.files[0]); e.target.value = ''; });
+$('np-file').addEventListener('change', e => { choosePendingPhoto(e.target.files[0]); e.target.value = ''; });
+
+function resetRegisterForm() {
+  $('new-patient-form').reset();
+  pendingPhoto = null; editingId = null;
+  $('np-photo-name').textContent = 'No photo chosen';
+  $('np-preview').classList.add('hidden');
+  $('np-id').disabled = false;
+  $('np-submit').textContent = 'Register patient';
+  $('np-cancel').style.display = 'none';
+}
+
+$('edit-patient').addEventListener('click', () => {
+  if (!current) return;
+  editingId = current.patient_id;
+  $('np-id').value = current.patient_id; $('np-id').disabled = true;
+  $('np-name').value = current.name || '';
+  $('np-age').value = current.age == null ? '' : Math.round(current.age);
+  $('np-sex').value = current.sex || '';
+  $('np-notes').value = current.notes || '';
+  $('np-submit').textContent = 'Save changes';
+  $('np-cancel').style.display = '';
+  $('new-patient-box').open = true;
+  $('new-patient-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+$('np-cancel').addEventListener('click', resetRegisterForm);
+
+$('new-patient-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  $('patient-error').classList.add('hidden');
+  const fields = {
+    name: $('np-name').value.trim(),
+    age: $('np-age').value === '' ? null : parseFloat($('np-age').value),
+    sex: $('np-sex').value || null,
+    notes: $('np-notes').value.trim(),
+  };
+  try {
+    if (editingId) {
+      await api(`/patients/${enc(editingId)}`, { method: 'PUT', body: { ...fields, sex: fields.sex || '' } });
+      toast('Patient details saved.');
+      const id = editingId;
+      resetRegisterForm();
+      $('new-patient-box').open = false;
+      await loadPatients(id);
+      await selectPatient(id);
+      return;
+    }
+    const id = $('np-id').value.trim();
+    const d = await api('/patients', { method: 'POST',
+      body: { patient_id: id, ...fields, take_photo: $('np-photo').checked && !pendingPhoto } });
+    let msg = 'Patient registered and saved to ' + d.folder;
+    let warn = d.photo_warning ? ('Registered. ' + d.photo_warning) : null;
+    if (pendingPhoto) {
+      try {
+        await api(`/patients/${enc(id)}/photo`, { method: 'POST', body: { image_base64: pendingPhoto } });
+        warn = null;
+      } catch (perr) { warn = 'Registered, but the photo was not saved: ' + perr.message; }
+    }
+    if (warn) toast(warn, true); else toast(msg);
+    resetRegisterForm();
+    $('new-patient-box').open = false;
+    await loadPatients(id);
+    await selectPatient(id);
+  } catch (err) {
+    $('patient-error').textContent = err.message;
+    $('patient-error').classList.remove('hidden');
+  }
+});
+
+$('photo-capture').addEventListener('click', async () => {
+  if (!current) return;
+  $('photo-capture').disabled = true;
+  $('photo-capture').textContent = 'Taking photo…';
+  try {
+    await api(`/patients/${enc(current.patient_id)}/photo/capture`, { method: 'POST' });
+    toast('Photo saved to the patient folder.');
+    await selectPatient(current.patient_id);
+  } catch (err) {
+    toast(err.message, true);
+  } finally {
+    $('photo-capture').textContent = 'Take photo with camera';
+    $('photo-capture').disabled = !current;
+  }
+});
+
+$('photo-upload').addEventListener('change', e => { uploadPhotoFile(e.target.files[0]); e.target.value = ''; });
+$('photo-cam').addEventListener('change', e => { uploadPhotoFile(e.target.files[0]); e.target.value = ''; });
+
+// ============================================================
+// 2. live sensor + measurement
+// ============================================================
+async function pollLive() {
+  try {
+    liveState = await api('/sensor/live');
+    const src = liveState.source;
+    const chip = $('sensor-text'), dot = $('sensor-dot');
+    const noSensor = src === 'none';
+    chip.innerHTML = src === 'simulated'
+      ? 'Sensor: <span class="sim-badge">SIMULATED</span>'
+      : noSensor ? 'Sensor: <span class="sim-badge">NOT CONNECTED</span> manual entry'
+      : src === 'hw827' ? 'Sensor connected (HW-827 pulse sensor)'
+      : 'Sensor connected (MAX30102)';
+    dot.className = 'dot ' + (noSensor ? 'bad' : liveState.finger ? 'live' : 'warn');
+    $('live-src').textContent = src === 'simulated' ? 'simulated pulse (no hardware)'
+      : noSensor ? 'no sensor · type heart rate' : src === 'hw827' ? 'HW-827 · heart rate only' : 'MAX30102 · live';
+    $('measure-btn').disabled = noSensor || measuring || !current;
+    $('live-hr').textContent = liveState.hr == null ? '—' : Math.round(liveState.hr);
+    $('live-spo2').textContent = liveState.spo2 == null ? '—' : Math.round(liveState.spo2) + '';
+    $('live-quality').textContent = liveState.finger ? (liveState.quality || '—') : 'No finger';
+    $('finger-text').textContent = noSensor
+      ? ('No sensor is connected. Type the heart rate in the assessment form.' + (liveState.error ? ' (' + liveState.error + ')' : ''))
+      : liveState.finger
+        ? 'Finger detected. Keep still, then press start.'
+        : 'Place your finger on the sensor, then press start.';
+    $('finger-hint').style.background = liveState.finger ? '#f1faf8' : '#fff8ec';
+    drawHRChart(liveState.trace || []);
+    updateCompare();
+  } catch (e) {
+    $('sensor-text').textContent = 'Sensor status unavailable';
+    $('sensor-dot').className = 'dot bad';
+  }
+}
+
+$('measure-btn').addEventListener('click', async () => {
+  if (!current || measuring) return;
+  measuring = true;
+  $('measure-btn').disabled = true;
+  $('measure-result').innerHTML = '';
+  $('measure-progress').classList.remove('hidden');
+  $('measure-progress').classList.add('indeterminate');
+  $('measure-bar').style.width = '0';
+  $('measure-phase').textContent = 'Starting…';
+  try {
+    const job = await api('/measure', { method: 'POST',
+      body: { patient_id: current.patient_id, seconds: parseInt($('measure-seconds').value, 10) } });
+    await pollMeasurement(job.job_id);
+  } catch (err) {
+    toast(err.message, true);
+  } finally {
+    measuring = false;
+    $('measure-btn').disabled = !current;
+  }
+});
+
+async function pollMeasurement(jobId) {
+  while (true) {
+    const j = await api(`/measure/${jobId}`);
+    if (j.phase === 'waiting_for_finger') {
+      $('measure-phase').textContent = 'Waiting for your finger on the sensor…';
+      $('measure-progress').classList.add('indeterminate');
+    } else if (j.phase === 'measuring') {
+      $('measure-progress').classList.remove('indeterminate');
+      $('measure-bar').style.width = Math.round((j.progress || 0) * 100) + '%';
+      $('measure-phase').textContent = 'Recording… keep your finger still';
+    }
+    if (j.status !== 'running') {
+      $('measure-progress').classList.add('hidden');
+      $('measure-phase').textContent = j.message || '';
+      renderMeasurementResult(j);
+      if (j.status === 'done') {
+        toast('Measurement saved to the patient folder.');
+        await selectPatient(current.patient_id);
+      }
+      return;
+    }
+    await new Promise(r => setTimeout(r, 500));
+  }
+}
+
+function renderMeasurementResult(j) {
+  const r = j.result;
+  const box = $('measure-result');
+  if (!r || r.hr == null) {
+    box.innerHTML = `<div class="warn-box">${j.message || 'No reading.'}</div>`;
+    return;
+  }
+  box.innerHTML = `
+    <div class="info-box" style="margin-top:12px;">
+      <b>Measured:</b> heart rate <b>${Math.round(r.hr)} bpm</b>,
+      SpO2 <b>${r.spo2 == null ? '—' : Math.round(r.spo2) + '%'}</b>,
+      signal <b>${r.quality}</b> (${r.window_seconds} s).
+    </div>
+    <div class="btn-row"><button class="btn btn-sm btn-accent" id="use-measured" type="button">Use this heart rate in the assessment</button></div>`;
+  $('use-measured').addEventListener('click', () => {
+    $('heartRate').value = Math.round(r.hr);
+    if (r.spo2 != null) $('spo2').value = Math.round(r.spo2);
+    setSource('sensor');
+    updateCompare(Math.round(r.hr));
+    toast('Heart rate set from the measurement.');
+    location.hash = '#assess';
+  });
+}
+
+// ============================================================
+// 3. assessment
+// ============================================================
+function setSource(src) {
+  $('hr_source').value = src;
+  const t = $('hr-tag');
+  t.textContent = src === 'sensor' ? 'from sensor' : 'typed';
+  t.className = 'tag ' + (src === 'sensor' ? 'tag-sensor' : 'tag-manual');
+}
+$('heartRate').addEventListener('input', () => { setSource('manual'); updateCompare(); });
+
+function updateCompare(formOverride) {
+  const formHR = formOverride != null ? formOverride : fieldValue('heartRate', true);
+  const sHR = liveState && liveState.finger && liveState.hr != null ? liveState.hr : null;
+  $('cmp-form').textContent = formHR == null ? '—' : formHR + ' bpm';
+  $('cmp-sensor').textContent = sHR == null ? '—' : Math.round(sHR) + ' bpm';
+  $('cmp-diff').textContent = (formHR == null || sHR == null) ? '—'
+    : ((formHR - sHR > 0 ? '+' : '') + Math.round(formHR - sHR) + ' bpm');
+}
+
+$('predict-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  $('assess-error').classList.add('hidden');
+  if (!current) {
+    $('assess-error').textContent = 'Select or register a patient first (step 1).';
+    $('assess-error').classList.remove('hidden');
+    return;
+  }
+  const btn = $('submit-btn');
+  btn.disabled = true; btn.textContent = 'Calculating…';
+  const payload = {
+    patient_id: current.patient_id,
+    male: fieldValue('male'), age: fieldValue('age', true), education: fieldValue('education'),
+    currentSmoker: fieldValue('currentSmoker'), cigsPerDay: fieldValue('cigsPerDay', true),
+    BPMeds: fieldValue('BPMeds'), prevalentStroke: fieldValue('prevalentStroke'),
+    prevalentHyp: fieldValue('prevalentHyp'), diabetes: fieldValue('diabetes'),
+    totChol: fieldValue('totChol', true), sysBP: fieldValue('sysBP', true), diaBP: fieldValue('diaBP', true),
+    BMI: fieldValue('BMI', true), heartRate: fieldValue('heartRate', true),
+    glucose: fieldValue('glucose', true), spo2: fieldValue('spo2', true),
+    hr_source: $('hr_source').value,
+  };
+  try {
+    const data = await api('/predict', { method: 'POST', body: payload });
+    renderResult(data);
+    await selectPatient(current.patient_id);
+    toast('Assessment saved to the patient folder.');
+  } catch (err) {
+    $('assess-error').textContent = err.message;
+    $('assess-error').classList.remove('hidden');
+    $('result').classList.add('hidden');
+    $('result-empty').classList.remove('hidden');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Run risk assessment';
+  }
+});
+
+function renderResult(d) {
+  $('result-empty').classList.add('hidden');
+  $('result').classList.remove('hidden');
+  const p12 = d.risk_12_year_probability;
+  $('risk-num').textContent = (p12 * 100).toFixed(1) + '%';
+  $('risk-10').textContent = (d.risk_10_year_probability * 100).toFixed(1) + '%';
+  const band = $('risk-band');
+  band.textContent = d.risk_category + ' risk';
+  band.className = 'band band-' + d.risk_category;
+  const fill = $('risk-fill');
+  fill.setAttribute('stroke', { Low: '#1e8e5a', Moderate: '#c98a12', High: '#c0392b' }[d.risk_category]);
+  fill.setAttribute('stroke-dasharray', `${Math.min(p12 / 0.30, 1) * 100} 100`);
+  $('result-meta').textContent = `Heart rate used: ${$('heartRate').value} bpm (${d.hr_source === 'sensor' ? 'from sensor' : 'typed'})`;
+
+  const w = $('result-warnings');
+  w.innerHTML = (d.validation_warnings && d.validation_warnings.length)
+    ? `<div class="warn-box"><b>Check input:</b><ul style="margin:6px 0 0;padding-left:18px;">${d.validation_warnings.map(x => `<li>${x}</li>`).join('')}</ul></div>` : '';
+
+  const list = $('factor-list');
+  list.innerHTML = '';
+  const f = d.top_contributing_factors || [];
+  const maxAbs = Math.max(0.0001, ...f.map(x => Math.abs(x.contribution)));
+  f.forEach(x => {
+    const li = document.createElement('li');
+    li.className = 'factor-row';
+    const wdt = Math.abs(x.contribution) / maxAbs * 50;
+    const up = x.contribution > 0;
+    li.innerHTML = `<span>${x.feature} = ${x.value}</span>
+      <span class="fbar-track"><span class="fmid"></span>
+        <span class="fbar ${up ? 'fbar-up' : 'fbar-down'}" style="${up ? 'left:50%' : 'left:' + (50 - wdt) + '%'};width:${wdt}%"></span></span>
+      <span class="fval">${up ? '+' : ''}${(x.contribution * 100).toFixed(1)} pt</span>`;
+    list.appendChild(li);
+  });
+  $('saved-to').textContent = 'Saved: ' + d.saved_to;
+  $('disclaimer').textContent = d.disclaimer;
+}
+
+// ============================================================
+// history, trend, charts
+// ============================================================
+async function loadHistory() {
+  if (!current) return renderHistory([]);
+  const d = await api(`/history/${enc(current.patient_id)}?limit=50`);
+  renderHistory(d.history);
+}
+
+function renderHistory(rows) {
+  const body = $('history-body');
+  if (!rows || !rows.length) {
+    body.innerHTML = '<tr><td colspan="5" class="muted">No assessments yet.</td></tr>';
+    return;
+  }
+  body.innerHTML = rows.map(r => `
+    <tr><td>${r.timestamp.replace('T', ' ').slice(0, 16)}</td>
+    <td>${r.input_data && r.input_data.heartRate != null ? Math.round(r.input_data.heartRate) : '—'}</td>
+    <td>${r.input_data && r.input_data.spo2 != null ? Math.round(r.input_data.spo2) + '%' : '—'}</td>
+    <td>${(r.risk_12_year_probability * 100).toFixed(1)}%</td>
+    <td><span class="band band-${r.risk_category}" style="font-size:11px;padding:2px 8px;">${r.risk_category}</span></td></tr>`).join('');
+}
+
+async function loadTrend() {
+  if (!current) return drawTrend([]);
+  const d = await api(`/trend/${enc(current.patient_id)}`);
+  const s = d.summary;
+  $('cmp-prev').textContent = pct(s.previous);
+  $('cmp-cur').textContent = pct(s.current);
+  $('cmp-chg').textContent = s.change == null ? '—' : (s.change > 0 ? '+' : '') + (s.change * 100).toFixed(1) + ' pt';
+  const dir = s.direction || 'insufficient data';
+  const pill = $('trend-pill');
+  pill.textContent = dir === 'insufficient data' ? 'no trend yet' : 'risk ' + dir;
+  const col = { rising: '#c0392b', falling: '#1e8e5a', stable: '#c98a12' }[dir] || '#8a9aa0';
+  pill.style.background = col; pill.style.color = '#fff';
+  $('trend-sub').textContent = `${d.points.length} assessment(s), 12-year estimate, oldest to newest.`;
+  drawTrend(d.points);
+}
+
+function drawTrend(points) {
+  const svg = $('trend-chart');
+  const W = 600, H = 180, L = 42, R = 14, T = 12, B = 24;
+  if (!points.length) {
+    svg.innerHTML = `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" font-size="13" fill="#5b7180">No assessments yet</text>`;
+    return;
+  }
+  const maxP = Math.max(0.2, ...points.map(p => p.probability)) * 1.1;
+  const x = i => points.length === 1 ? (L + (W - L - R) / 2) : L + i * (W - L - R) / (points.length - 1);
+  const y = v => T + (1 - v / maxP) * (H - T - B);
+  let g = `<defs><linearGradient id="tg" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="#0b6e8a" stop-opacity="0.28"/><stop offset="1" stop-color="#0b6e8a" stop-opacity="0"/></linearGradient></defs>`;
+  for (let k = 0; k <= 4; k++) {
+    const v = maxP * k / 4;
+    g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#e6eef1"/>` +
+         `<text x="${L - 6}" y="${y(v) + 4}" font-size="11" text-anchor="end" fill="#5b7180">${(v * 100).toFixed(0)}%</text>`;
+  }
+  [[0.10, '#c98a12'], [0.20, '#c0392b']].forEach(([t, c]) => {
+    if (t < maxP) g += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="${c}" stroke-dasharray="4 4" opacity="0.6"/>`;
+  });
+  const line = points.map((p, i) => `${i ? 'L' : 'M'}${x(i)},${y(p.probability)}`).join(' ');
+  g += `<path d="${line} L${x(points.length - 1)},${H - B} L${x(0)},${H - B} Z" fill="url(#tg)"/>`;
+  g += `<path d="${line}" fill="none" stroke="#0b6e8a" stroke-width="2.5"/>`;
+  points.forEach((p, i) => {
+    const c = { High: '#c0392b', Moderate: '#c98a12', Low: '#1e8e5a' }[p.risk_category] || '#0b6e8a';
+    g += `<circle cx="${x(i)}" cy="${y(p.probability)}" r="5" fill="${c}" stroke="#fff" stroke-width="1.5">` +
+         `<title>${p.timestamp.replace('T', ' ').slice(0, 16)} UTC: ${(p.probability * 100).toFixed(1)}%</title></circle>`;
+    g += `<text x="${x(i)}" y="${H - 6}" font-size="10.5" text-anchor="middle" fill="#5b7180">#${i + 1}</text>`;
+  });
+  svg.innerHTML = g;
+}
+
+function drawHRChart(values) {
+  const svg = $('hr-chart');
+  const W = 600, H = 150, L = 36, R = 10, T = 10, B = 18;
+  const N = 120, yMin = 40, yMax = 160;
+  const x = i => L + i * (W - L - R) / (N - 1);
+  const y = v => T + (1 - (Math.max(yMin, Math.min(yMax, v)) - yMin) / (yMax - yMin)) * (H - T - B);
+  let g = '';
+  [60, 100, 140].forEach(v => {
+    g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#e6eef1"/>` +
+         `<text x="${L - 6}" y="${y(v) + 4}" font-size="11" text-anchor="end" fill="#5b7180">${v}</text>`;
+  });
+  const off = N - values.length;
+  let d = '', pen = false;
+  values.forEach((v, i) => {
+    if (v == null) { pen = false; return; }
+    d += `${pen ? 'L' : 'M'}${x(off + i)},${y(v)} `;
+    pen = true;
+  });
+  if (d) g += `<path d="${d}" fill="none" stroke="#1aa39a" stroke-width="2.2" stroke-linejoin="round"/>`;
+  else g += `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" font-size="13" fill="#5b7180">Waiting for sensor data</text>`;
+  svg.innerHTML = g;
+}
+
+// ============================================================
+// 4. reports
+// ============================================================
+function renderReports(urls) {
+  const list = $('report-list');
+  if (!current) { list.innerHTML = '<li class="muted">Select a patient to see their reports.</li>'; return; }
+  if (!urls.length) { list.innerHTML = '<li class="muted">No reports generated yet.</li>'; return; }
+  list.innerHTML = urls.slice().reverse().map(u => {
+    const name = u.split('/').pop();
+    return `<li><span>${name}</span><a class="btn btn-sm btn-ghost" href="${u}" download>Download</a></li>`;
+  }).join('');
+}
+
+$('report-btn').addEventListener('click', async () => {
+  if (!current) return;
+  const fmt = $('report-format').value;
+  $('report-status').textContent = 'Building the report…';
+  $('report-btn').disabled = true;
+  try {
+    const res = await fetch(`/patients/${enc(current.patient_id)}/report?format=${fmt}`);
+    if (!res.ok) {
+      let msg = 'Report failed';
+      try { msg = (await res.json()).detail; } catch (e) {}
+      throw new Error(msg);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${current.patient_id}_report.${fmt}`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    $('report-status').textContent = 'Report downloaded and saved in the patient folder (reports/).';
+    await selectPatient(current.patient_id);
+  } catch (err) {
+    $('report-status').textContent = err.message;
+  } finally {
+    $('report-btn').disabled = !current;
+  }
+});
+
+// ============================================================
+// 5. share
+// ============================================================
+function showShare(share) {
+  $('share-box').classList.remove('hidden');
+  $('share-url').textContent = share.url || (location.origin + '/share/' + share.token);
+  $('share-expiry').textContent = 'Expires ' + (share.expires_at || '').slice(0, 16).replace('T', ' ') + ' UTC';
+}
+
+$('share-create').addEventListener('click', async () => {
+  if (!current) return;
+  try {
+    const d = await api(`/patients/${enc(current.patient_id)}/share`, { method: 'POST',
+      body: { days: parseInt($('share-days').value, 10) } });
+    showShare(d);
+    $('share-url').textContent = d.url;
+    toast('Share link created.');
+  } catch (err) { toast(err.message, true); }
+});
+
+$('share-copy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('share-url').textContent); toast('Link copied.'); }
+  catch (e) { toast('Select the link and copy it manually.', true); }
+});
+
+$('share-revoke').addEventListener('click', async () => {
+  if (!current) return;
+  try {
+    await api(`/patients/${enc(current.patient_id)}/share`, { method: 'DELETE' });
+    $('share-box').classList.add('hidden');
+    toast('Share link revoked.');
+  } catch (err) { toast(err.message, true); }
+});
+
+
+// ============================================================
+// scroll-driven video (short clips) / looping background (long clips)
+// ============================================================
+(function scrollVideo() {
+  const stage = $('scroll-stage');
+  const sv = $('scroll-video');
+  const bg = $('bg-video');
+  const steps = Array.from(document.querySelectorAll('.scroll-step'));
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let target = 0, shown = 0, ticking = false, mode = 'scrub';
+
+  function setMode(m) {
+    mode = m;
+    if (m === 'background') {
+      stage.style.display = 'none';
+      document.body.classList.add('bg-mode');
+      if (!bg.src) bg.src = sv.currentSrc || 'media/hero-scroll.webm';
+      bg.play().catch(() => {});
+    } else {
+      stage.style.display = '';
+      document.body.classList.remove('bg-mode');
+      bg.pause();
+    }
+  }
+
+  function render() {
+    ticking = false;
+    const rect = stage.getBoundingClientRect();
+    const range = stage.offsetHeight - window.innerHeight;
+    const p = Math.min(1, Math.max(0, -rect.top / Math.max(range, 1)));
+    target = p;
+    $('scroll-bar').style.width = (p * 100).toFixed(1) + '%';
+    steps.forEach(el => {
+      const a = parseFloat(el.dataset.from), b = parseFloat(el.dataset.to);
+      el.classList.toggle('active', p >= a && p < b);
+    });
+    if (!reduce) requestAnimationFrame(smooth); else seek(target);
+  }
+
+  function seek(p) {
+    if (!sv.duration || isNaN(sv.duration)) return;
+    const t = p * (sv.duration - 0.04);
+    if (Math.abs(sv.currentTime - t) > 0.03) sv.currentTime = t;
+  }
+
+  function smooth() {
+    shown += (target - shown) * 0.18;
+    seek(shown);
+    if (Math.abs(target - shown) > 0.002) requestAnimationFrame(smooth);
+  }
+
+  function onScroll() {
+    if (!ticking) { ticking = true; requestAnimationFrame(render); }
+  }
+
+  sv.addEventListener('loadedmetadata', () => {
+    sv.pause();
+    if (sv.duration > 20) setMode('background');   // long clip: loop it behind the page
+    else { setMode('scrub'); seek(0); }
+  });
+  sv.addEventListener('error', () => { stage.style.display = 'none'; });
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  if (sv.readyState >= 1) sv.dispatchEvent(new Event('loadedmetadata'));
+})();
+
+// ============================================================
+// start
+// ============================================================
+(async function init() {
+  try { await loadPatients(); } catch (e) { toast('Could not load patients: ' + e.message, true); }
+  pollLive();
+  setInterval(pollLive, 1000);
+  updateCompare();
+  setSource('manual');
+})();
+</script>
+</body>
+</html>

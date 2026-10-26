@@ -1,0 +1,27 @@
+# Core ML / data
+pandas>=2.0
+scikit-learn>=1.4
+joblib>=1.3
+
+# Model comparison (optional but recommended -- train.py falls back to
+# sklearn's GradientBoostingClassifier automatically if this isn't installed)
+xgboost>=2.0
+
+# Explainability (optional -- train.py falls back to permutation
+# importance automatically if this isn't installed)
+shap>=0.44
+
+# API
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.5
+
+# Testing
+pytest>=8.0
+httpx>=0.27  # required by fastapi.testclient.TestClient
+
+# Reports (PNG / DOCX) and Raspberry Pi sensor support
+matplotlib>=3.8
+python-docx>=1.1
+Pillow>=10.0
+smbus2>=0.4  # only needed on the Raspberry Pi (MAX30102 over I2C)
